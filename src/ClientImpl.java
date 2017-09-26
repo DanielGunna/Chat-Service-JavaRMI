@@ -24,21 +24,31 @@ import java.util.logging.Logger;
 public class ClientImpl extends UnicastRemoteObject implements Client {
 
     private HashMap<String, UserInfo> users;
+    private int maxClients;
+    private ChatService.ServiceListener listener;
+
+    ClientImpl(int maxClients, ChatService.ServiceListener listener) throws java.rmi.RemoteException {
+        this();
+        this.maxClients = maxClients;
+        this.listener = listener;
+    }
 
     private void handleNewUser(User user, Message message) {
         try {
             Socket userSocket = new Socket(user.getHost(), user.getPort());
             UserInfo info = new UserInfo(userSocket, new ArrayList<Message>(), user);
-            // info.sendMessage(message);
-            notifyNewUser(user);
-            users.put(message.getOwner(), info);
-            // new Timer().schedule( new  TimerTask() {
-              //  @Override
-             //   public void run() {
-                   sendUsers(info);
-             //   }
-          //  },1000);
-      
+            if (verifyMaxClients(info)) {
+                // info.sendMessage(message);
+                notifyNewUser(user);
+                users.put(message.getOwner(), info);
+                // new Timer().schedule( new  TimerTask() {
+                //  @Override
+                //   public void run() {
+                sendUsers(info);
+            }
+            //   }
+            //  },1000);
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -51,13 +61,15 @@ public class ClientImpl extends UnicastRemoteObject implements Client {
 
     @Override
     public void sendMessage(Message message, User user) throws java.rmi.RemoteException {
+        listener.onReceiveMessage(message);
         if (message.getType() == MessageType.NICKNAME.getValue()) {
             new Thread(() -> {
                 handleNewUser(user, message);
             }).start();
-
-        } else {
+        } else if (message.getType() == MessageType.MESSAGE.getValue()) {
             sendBroadast(user, message);
+        } else if (message.getType() == MessageType.LOGOUT.getValue()) {
+            disconnectUser(user, message);
         }
     }
 
@@ -88,6 +100,49 @@ public class ClientImpl extends UnicastRemoteObject implements Client {
             msg.setDate(new Date());
             info.sendMessage(msg);
         }
+    }
+
+    private boolean verifyMaxClients(UserInfo user) {
+        if (users.size() == maxClients) {
+            Message msg = new Message();
+            msg.setOwner("SERVER");
+            msg.setType(MessageType.MAXCLIENTS);
+            msg.setContent("Numero maximo de clientes atingido!!");
+            user.sendMessage(msg);
+            return false;
+        }
+        return true;
+    }
+
+    private void disconnectUser(User user, Message message) {
+        UserInfo info = users.get(user.getOwnerName());
+        try {
+            info.getSocket().close();
+            users.remove(user.getOwnerName());
+            sendUsersForAll();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void sendUsersForAll() {
+        for (Map.Entry<String, UserInfo> i : users.entrySet()) {
+            i.getValue().sendMessage(getClearUserList());
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    sendUsers(i.getValue());
+                }
+            }, 1000);
+        }
+    }
+
+    private Message getClearUserList() {
+        Message message = new Message();
+        message.setContent("CLEAR USERS lIST");
+        message.setOwner("SERVER");
+        message.setType(MessageType.CLEARUSERLIST);
+        return message;
     }
 
 }

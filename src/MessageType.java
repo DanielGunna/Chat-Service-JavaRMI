@@ -9,7 +9,14 @@
  * @author lipec
  */
 public enum MessageType {
-    NICKNAME(1),MESSAGE(2),USERSLIST(3);
+    NICKNAME(1),
+    MESSAGE(2),
+    USERSLIST(3),
+    MAXCLIENTS(4),
+    DISCONNECT(5), 
+    LOGOUT(6), 
+    CLEARUSERLIST(8),
+    RENEWUSERSLIST(7);
     
    
     private final int value;

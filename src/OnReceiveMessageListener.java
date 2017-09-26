@@ -14,4 +14,7 @@ import java.io.Serializable;
 public interface  OnReceiveMessageListener  extends Serializable{
     void onReceiveUser(String name);
     void onReceiveMessage(Message msg);
+    void onMaxClients(Message msg);
+
+    public void onClearUsers();
 }

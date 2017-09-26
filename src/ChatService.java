@@ -14,12 +14,24 @@ import java.rmi.Naming;
  * @author felipesilva
  */
 public class ChatService {
-
+    
+    private int maxClients;
+    private ServiceListener listener;
+    
+    public interface ServiceListener{
+        void onReceiveMessage(Message msg);
+    };
+    public ChatService(int maxClients, ServiceListener listener){
+        this.maxClients = maxClients;
+        this.listener = listener;
+        
+        
+    }
     private Client client;
 
     public void startClient() {
         try { 
-           client = new ClientImpl();
+           client = new ClientImpl(maxClients,listener);
            Naming.rebind(Constants.CHAT_SERVER_URL,client);
             System.out.println("Server Ok");
         } catch (Exception e) {

@@ -36,7 +36,6 @@ public class ChatClient extends UserImpl {
     public void connect() {
         try {
             client = (Client) Naming.lookup(Constants.CHAT_SERVER_URL);
-            System.out.println("User ok");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -78,8 +77,12 @@ public class ChatClient extends UserImpl {
     protected void handleMessages(Message message) {
         if(message.getType() == MessageType.USERSLIST.getValue()){
             listener.onReceiveUser(message.getContent());
-        }else{
+        }else if(message.getType() == MessageType.MESSAGE.getValue()) {
             listener.onReceiveMessage(message);
+        }else if(message.getType() == MessageType.MAXCLIENTS.getValue()){
+            listener.onMaxClients(message);
+        }else if(message.getType() == MessageType.CLEARUSERLIST.getValue()){
+            listener.onClearUsers();
         }
     }
 

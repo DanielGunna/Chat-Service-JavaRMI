@@ -1,4 +1,6 @@
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,7 +24,7 @@ import javax.swing.event.ListDataListener;
  * @author felipesilva
  */
 public class ChatScreen extends javax.swing.JFrame implements OnReceiveMessageListener {
-    
+
     private ChatClient chatClient;
     private String userName;
     private ArrayList<String> users;
@@ -41,6 +43,7 @@ public class ChatScreen extends javax.swing.JFrame implements OnReceiveMessageLi
         userName = JOptionPane.showInputDialog(this, "Insira seu nome de usuario!!");
         chatClient.setOwnerName(userName);
         authUser();
+        addLogout();
     }
 
     /**
@@ -184,25 +187,46 @@ public class ChatScreen extends javax.swing.JFrame implements OnReceiveMessageLi
     private void authUser() {
         chatClient.sendMessage(userName, userName, MessageType.NICKNAME);
     }
-    
+
     @Override
     public void onReceiveUser(String name) {
         listModel.addElement(name);
     }
-    
+
     @Override
     public void onReceiveMessage(Message msg) {
         chatInfo.setText(chatInfo.getText() + "\n\n" + getMessage(msg));
     }
-    
+
     private void setupList() {
         listModel = new DefaultListModel<String>();
         usersList.setModel(listModel);
     }
-    
+
     private String getMessage(Message msg) {
         DateFormat format = new SimpleDateFormat("HH:mm");
         return "[ " + format.format(msg.getDate()) + " ] ( " + msg.getOwner() + " ) : " + msg.getContent();
     }
-    
+
+    @Override
+    public void onMaxClients(Message msg) {
+        JOptionPane.showMessageDialog(rootPane, msg.getContent());
+        this.dispose();
+    }
+
+    private void addLogout() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                chatClient.sendMessage(userName, "LOGOUT" + userName, MessageType.LOGOUT);
+                e.getWindow().dispose();
+            }
+        });
+    }
+
+    @Override
+    public void onClearUsers() {
+        listModel.clear();
+    }
+
 }
